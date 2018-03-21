@@ -42,7 +42,7 @@ RM_TYPES = ['rm', 'rm2', 'rm_mini', 'rm_pro_phicomm', 'rm2_home_plus',
             'rm2_pro_plus_bl', 'rm_mini_shate']
 SP1_TYPES = ['sp1']
 SP2_TYPES = ['sp2', 'honeywell_sp2', 'sp3', 'spmini2', 'spminiplus']
-SP3_TYPES = ['sp3']
+SP3_TYPES = ['sp3s']
 MP1_TYPES = ['mp1']
 
 SWITCH_TYPES = RM_TYPES + SP1_TYPES + SP2_TYPES + SP3_TYPES + MP1_TYPES
