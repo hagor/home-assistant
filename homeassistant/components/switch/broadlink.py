@@ -42,9 +42,10 @@ RM_TYPES = ['rm', 'rm2', 'rm_mini', 'rm_pro_phicomm', 'rm2_home_plus',
             'rm2_pro_plus_bl', 'rm_mini_shate']
 SP1_TYPES = ['sp1']
 SP2_TYPES = ['sp2', 'honeywell_sp2', 'sp3', 'spmini2', 'spminiplus']
+SP3_TYPES = ['sp3']
 MP1_TYPES = ['mp1']
 
-SWITCH_TYPES = RM_TYPES + SP1_TYPES + SP2_TYPES + MP1_TYPES
+SWITCH_TYPES = RM_TYPES + SP1_TYPES + SP2_TYPES + SP3_TYPES + MP1_TYPES
 
 SWITCH_SCHEMA = vol.Schema({
     vol.Optional(CONF_COMMAND_OFF): cv.string,
@@ -164,6 +165,9 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
     elif switch_type in SP2_TYPES:
         broadlink_device = broadlink.sp2((ip_addr, 80), mac_addr)
         switches = [BroadlinkSP2Switch(friendly_name, broadlink_device)]
+    elif switch_type in SP3_TYPES:
+        broadlink_device = broadlink.sp2((ip_addr, 80), mac_addr)
+        switches = [BroadlinkSP3Switch(friendly_name, broadlink_device)]
     elif switch_type in MP1_TYPES:
         switches = []
         broadlink_device = broadlink.mp1((ip_addr, 80), mac_addr)
@@ -306,6 +310,30 @@ class BroadlinkSP2Switch(BroadlinkSP1Switch):
         if state is None and retry > 0:
             return self._update(retry-1)
         self._state = state
+        
+class BroadlinkSP3Switch(BroadlinkSP2Switch):
+    """Representation of an Broadlink switch."""
+
+    def update(self):
+        """Synchronize state with switch."""
+        self._update()
+    
+    def _update(self, retry=2):
+        """Update the state of the device."""
+        try:
+            state = self._device.check_power()
+            energy = self._device.get_energy()
+        except (socket.timeout, ValueError) as error:
+            if retry < 1:
+                _LOGGER.error(error)
+                return
+            if not self._auth():
+                return
+            return self._update(retry-1)
+        if state is None and retry > 0:
+            return self._update(retry-1)
+        self._state = state
+        self._energy = energy
 
 
 class BroadlinkMP1Slot(BroadlinkRMSwitch):
