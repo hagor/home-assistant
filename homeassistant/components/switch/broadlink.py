@@ -194,6 +194,7 @@ class BroadlinkRMSwitch(SwitchDevice):
         """Initialize the switch."""
         self._name = friendly_name
         self._state = False
+        self._energy = 0
         self._command_on = b64decode(command_on) if command_on else None
         self._command_off = b64decode(command_off) if command_off else None
         self._device = device
@@ -207,6 +208,11 @@ class BroadlinkRMSwitch(SwitchDevice):
     def assumed_state(self):
         """Return true if unable to access real state of entity."""
         return True
+
+    @property
+    def assumed_energy(self):
+        """Return true if unable to get real energy of entity."""
+        return 0
 
     @property
     def should_poll(self):
@@ -310,19 +316,24 @@ class BroadlinkSP2Switch(BroadlinkSP1Switch):
         if state is None and retry > 0:
             return self._update(retry-1)
         self._state = state
+
         
 class BroadlinkSP3Switch(BroadlinkSP2Switch):
     """Representation of an Broadlink switch."""
 
+    @property
+    def assumed_energy(self):
+        """Return true if unable to get real energy of entity."""
+        return 0
+
     def update(self):
-        """Synchronize state with switch."""
+        """Synchronize state and energy with switch."""
         self._update()
     
     def _update(self, retry=2):
         """Update the state of the device."""
         try:
             state = self._device.check_power()
-            energy = self._device.get_energy()
         except (socket.timeout, ValueError) as error:
             if retry < 1:
                 _LOGGER.error(error)
@@ -333,6 +344,17 @@ class BroadlinkSP3Switch(BroadlinkSP2Switch):
         if state is None and retry > 0:
             return self._update(retry-1)
         self._state = state
+        try:
+            energy = self.__device.get_energy()
+        except (socket.timeout, ValueError) as error:
+            if retry < 1:
+                _LOGGER.error(error)
+                return
+            if not self._auth():
+                return
+            return self._update(retry-1)
+        if energy is None and retry > 0:
+            return self._update(retry-1)
         self._energy = energy
 
 
